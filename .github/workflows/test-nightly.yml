@@ -42,6 +42,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: default
     continue-on-error: true
+    env:
+      MJ_KEY: ${{ secrets.MJ_KEY }}
+      MJ_SECRET: ${{ secrets.MJ_SECRET }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
