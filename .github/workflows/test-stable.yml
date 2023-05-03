@@ -14,8 +14,7 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Debug
-        run: ls -l
+      - uses: actions/checkout@v3
 
       - name: Lint code
         uses: actions-rs/cargo@v1.0.1
