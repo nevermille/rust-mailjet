@@ -49,6 +49,12 @@ jobs:
       - name: Download code
         uses: actions/checkout@v3
 
+      - name: Install Rust beta toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: beta
+          components: clippy
+
       - name: Execute tests
         uses: actions-rs/cargo@v1.0.1
         with:
