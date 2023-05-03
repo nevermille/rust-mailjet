@@ -11,12 +11,19 @@ jobs:
   check:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    environment: default
     continue-on-error: true
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Download code
         uses: actions/checkout@v3
+
+      - name: Install Rust nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          components: clippy
 
       - name: Lint code
         uses: actions-rs/cargo@v1.0.1
