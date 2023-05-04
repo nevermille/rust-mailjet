@@ -1,4 +1,4 @@
-# rust-mailjet
+# Unoficial wrapper for Mailjet API
 
 Rust wrapper for Mailjet's API
 
@@ -10,7 +10,7 @@ for more information.
 # Send a basic email
 
 ```rust
-use mailjet::{
+use mailjet_api_wrapper::{
     data::{EmailAddress, Message},
     requests::SendRequest,
     Mailjet,
