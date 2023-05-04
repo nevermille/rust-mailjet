@@ -14,25 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-/// An email attachment
-mod attachment;
-/// An email address
-mod email_address;
-/// An email
-mod message;
-/// An email information
-mod message_information;
-/// A sending error
-mod response_error;
-/// The status of an email sending
-mod response_message;
-/// A successfully sent email
-mod response_success;
+use serde::{Deserialize, Serialize};
 
-pub use attachment::Attachment;
-pub use email_address::EmailAddress;
-pub use message::Message;
-pub use message_information::MessageInformation;
-pub use response_error::ResponseError;
-pub use response_message::ResponseMessage;
-pub use response_success::ResponseSuccess;
+use crate::data::MessageInformation;
+
+/// The response to message information retrieving
+#[derive(Serialize, Deserialize, Default)]
+pub struct MessageResponse {
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Count")]
+    #[serde(default)]
+    pub count: i64,
+
+    /// An array containing a list of objects returned by the endpoint
+    #[serde(rename = "Data")]
+    #[serde(default)]
+    pub data: Vec<MessageInformation>,
+
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Total")]
+    #[serde(default)]
+    pub total: i64,
+}

@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/// The response to message information retrieving
+mod message_response;
 /// The response to email sending
 mod send_response;
 
+pub use message_response::MessageResponse;
 pub use send_response::SendResponse;
