@@ -28,7 +28,7 @@
 //! # Send a basic email
 //!
 //! ```
-//! use mailjet::{
+//! use mailjet_api_wrapper::{
 //!     data::{EmailAddress, Message},
 //!     requests::SendRequest,
 //!     Mailjet,
@@ -75,4 +75,4 @@ pub mod requests;
 /// The response structures
 pub mod responses;
 
-pub use self::mailjet::Mailjet;
+pub use mailjet::Mailjet;
