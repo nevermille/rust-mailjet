@@ -18,4 +18,8 @@ Cargo.lock
 
 /target
 
+# Developper's env vars
 .env
+
+# MacOS internal files
+**/.DS_Store
