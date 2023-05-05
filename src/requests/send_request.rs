@@ -18,6 +18,8 @@ use crate::data::Message;
 use serde::{Deserialize, Serialize};
 
 /// The email sending request
+#[doc = include_str!("../../doc/send_basic_email.md")]
+#[doc = include_str!("../../doc/send_with_attached_files.md")]
 #[derive(Serialize, Deserialize, Default)]
 pub struct SendRequest {
     /// The list of all emails to send

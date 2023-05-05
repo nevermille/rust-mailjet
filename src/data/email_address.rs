@@ -39,7 +39,7 @@ impl EmailAddress {
     pub fn from_email(email: &str) -> Self {
         Self {
             email: email.to_string(),
-            ..Self::default()
+            ..Default::default()
         }
     }
 
