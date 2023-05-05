@@ -53,7 +53,7 @@ let mailjet = Mailjet::from_api_keys("your_api_key", "your_api_secret");
 
 let request = MessageInformationRequest {
     campaign_id: Some(544678796), // Corresponds to parameter CampaignID
-    .. Default::default
+    ..Default::default()
 };
 
 let res = mailjet.message_information(&request).unwrap_or_default();
@@ -120,7 +120,7 @@ let response = mailjet.send(&send_request).unwrap_or_default();
 | Categories | Features | Actions |
 |------------|----------|---------|
 | Send Emails | - | ✅ Send an email message via Send API v3.1 <br/> ❌ Send an email message via Send API v3 |
-| Messages | - | ✅ Get detailed information on all processed messages <br/> ✅ Get detailed information on a specific processed message <br/> ✅ Get the event history for a specific message <br/> ❌ Retrieve sending / size / spam information about all messages <br/> ❌ Retrieve sending / size / spam information about a specific message ID |
+| Messages | - | ✅ Get detailed information on all processed messages <br/> ✅ Get detailed information on a specific processed message <br/> ✅ Get the event history for a specific message <br/> ✅ Retrieve sending / size / spam information about all messages <br/> ✅ Retrieve sending / size / spam information about a specific message ID |
 | Contact | Contact | ❌ Create a new contact <br/> ❌ Get a list of all contacts <br/> ❌ Get a specific contact <br/> ❌ Update a specific contact |
 | Contact | Contact List | ❌ Create a new contact list <br/> ❌ Retrieve general details for all contact lists <br/> ❌ Retrieve information on a specific contact list <br/> ❌ Update a specific contact list <br/> ❌ Delete a contact list |
 | Contact | Bulk Contact Management | ❌ Add, remove or unsubscribe a list of contacts to/from a selection of contact lists <br/> ❌ Add, unsubscribe or remove the contacts present in a list to / from another list <br/> ❌ Add, remove or unsubscribe a list of contacts to/from a specific contact list <br/> ❌ Use an uploaded CSV list of contacts to manage their presence and subscription status in a contact list <br/> ❌ Monitor a submitted upload / update request for multiple contacts <br/> ❌ Monitor a submitted upload / update request for contacts from one list to another <br/> ❌ Monitor a submitted upload / update request for multiple contacts into a specific contact list <br/> ❌ View the status of a CSV import job <br/> ❌ Update or abort a contact CSV import job in progress |

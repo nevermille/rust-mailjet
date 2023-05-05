@@ -16,7 +16,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::data::MessageHistoryInformation;
+use crate::data::MessageHistoryData;
 
 /// The response to message history retrieving
 #[derive(Serialize, Deserialize, Default)]
@@ -29,7 +29,7 @@ pub struct MessageHistoryResponse {
     /// An array containing a list of objects returned by the endpoint
     #[serde(rename = "Data")]
     #[serde(default)]
-    pub data: Vec<MessageHistoryInformation>,
+    pub data: Vec<MessageHistoryData>,
 
     /// Indicates the number of objects in the `Data` array
     #[serde(rename = "Total")]

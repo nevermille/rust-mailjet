@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::data::MessageInformationData;
 use serde::{Deserialize, Serialize};
-
-use crate::data::MessageData;
 
 /// The response to message information retrieving
 #[derive(Serialize, Deserialize, Default)]
-pub struct MessageResponse {
+pub struct MessageInformationResponse {
     /// Indicates the number of objects in the `Data` array
     #[serde(rename = "Count")]
     #[serde(default)]
@@ -29,7 +28,7 @@ pub struct MessageResponse {
     /// An array containing a list of objects returned by the endpoint
     #[serde(rename = "Data")]
     #[serde(default)]
-    pub data: Vec<MessageData>,
+    pub data: Vec<MessageInformationData>,
 
     /// Indicates the number of objects in the `Data` array
     #[serde(rename = "Total")]

@@ -17,10 +17,13 @@
 /// The response to message history retrieving
 mod message_history_response;
 /// The response to message information retrieving
+mod message_information_response;
+/// The response to message information retrieving
 mod message_response;
 /// The response to email sending
 mod send_response;
 
 pub use message_history_response::MessageHistoryResponse;
+pub use message_information_response::MessageInformationResponse;
 pub use message_response::MessageResponse;
 pub use send_response::SendResponse;

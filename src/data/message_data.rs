@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 
 /// An email information
 #[derive(Serialize, Deserialize, Default)]
-pub struct MessageInformation {
+pub struct MessageData {
     /// Timestamp indicating when the message arrived in the recipient's mailbox
     #[serde(rename = "ArrivedAt")]
     #[serde(default)]

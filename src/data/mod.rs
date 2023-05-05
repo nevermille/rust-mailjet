@@ -20,10 +20,12 @@ mod attachment;
 mod email_address;
 /// An email
 mod message;
-/// One step of an email's history
-mod message_history_information;
 /// An email information
-mod message_information;
+mod message_data;
+/// One step of an email's history
+mod message_history_data;
+/// A message infomation
+mod message_information_data;
 /// A sending error
 mod response_error;
 /// The status of an email sending
@@ -34,8 +36,9 @@ mod response_success;
 pub use attachment::Attachment;
 pub use email_address::EmailAddress;
 pub use message::Message;
-pub use message_history_information::MessageHistoryInformation;
-pub use message_information::MessageInformation;
+pub use message_data::MessageData;
+pub use message_history_data::MessageHistoryData;
+pub use message_information_data::MessageInformationData;
 pub use response_error::ResponseError;
 pub use response_message::ResponseMessage;
 pub use response_success::ResponseSuccess;

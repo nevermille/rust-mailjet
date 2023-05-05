@@ -209,13 +209,64 @@ impl Mailjet {
 
         Ok(serde_json::from_str(&response)?)
     }
+
+    /// Retrieve sending / size / spam information about all messages
+    ///
+    /// # Parameters
+    ///
+    /// * `search`: The search arguments
+    pub fn message_information(
+        &self,
+        search: &MessageInformationRequest,
+    ) -> Result<MessageInformationResponse, Box<dyn StdError>> {
+        // Create url
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("messageinformation");
+
+        search.add_parameters_to_url(&mut ub);
+
+        // Execute request
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Retrieve sending / size / spam information about a specific message ID
+    ///
+    /// # Parameters
+    ///
+    /// * `message_id`: The message id
+    pub fn message_information_from_id(
+        &self,
+        message_id: i128,
+    ) -> Result<MessageInformationResponse, Box<dyn StdError>> {
+        // Create url
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("messageinformation")
+            .add_route(&message_id.to_string());
+
+        // Execute request
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
         data::{EmailAddress, Message},
-        requests::{MessageRequest, SendRequest},
+        requests::{MessageInformationRequest, MessageRequest, SendRequest},
         Mailjet,
     };
 
@@ -287,6 +338,39 @@ mod test {
 
         let response = mailjet
             .message_history_from_id(std::env::var("MJ_MESSAGE_ID").unwrap().parse().unwrap())
+            .unwrap();
+
+        assert_eq!(response.count, 1);
+        assert_eq!(response.data.len(), 1);
+    }
+
+    #[test]
+    fn retrieve_all_message_information() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+
+        let search = MessageInformationRequest {
+            campaign_id: Some(std::env::var("MJ_CAMPAIGN_ID").unwrap().parse().unwrap()),
+            ..Default::default()
+        };
+
+        let response = mailjet.message_information(&search).unwrap();
+
+        assert!(response.count > 0);
+        assert_eq!(response.count as usize, response.data.len());
+    }
+
+    #[test]
+    fn retrieve_message_information_from_id() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+
+        let response = mailjet
+            .message_information_from_id(std::env::var("MJ_MESSAGE_ID").unwrap().parse().unwrap())
             .unwrap();
 
         assert_eq!(response.count, 1);
