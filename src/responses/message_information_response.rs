@@ -14,33 +14,24 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+use crate::data::MessageInformationData;
 use serde::{Deserialize, Serialize};
 
-/// An email attachment
+/// The response to message information retrieving
 #[derive(Serialize, Deserialize, Default)]
-pub struct Attachment {
-    /// Defines the type of content being sent out using a MIME type
-    ///
-    /// See <https://www.iana.org/assignments/media-types/media-types.xhtml> for additional information
-    #[serde(rename = "ContentType")]
+pub struct MessageInformationResponse {
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Count")]
     #[serde(default)]
-    pub content_type: String,
+    pub count: i64,
 
-    /// The full name of the file (including the file extension)
-    #[serde(rename = "Filename")]
+    /// An array containing a list of objects returned by the endpoint
+    #[serde(rename = "Data")]
     #[serde(default)]
-    pub filename: String,
+    pub data: Vec<MessageInformationData>,
 
-    /// Base64 encoded content of the attached file
-    #[serde(rename = "Base64Content")]
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Total")]
     #[serde(default)]
-    pub base64_content: String,
-
-    /// Name of the cid to be inserted in the HTML content of the message
-    ///
-    /// The value must be unique across all inline attachments in the message
-    #[serde(rename = "ContentID")]
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub content_id: Option<String>,
+    pub total: i64,
 }

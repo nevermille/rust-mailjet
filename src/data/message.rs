@@ -26,13 +26,24 @@ pub struct Message {
     /// Must be a valid, activated and registered sender for this account
     #[serde(rename = "From")]
     #[serde(default)]
+    #[serde(skip_serializing_if = "EmailAddress::is_empty")]
     pub from: EmailAddress,
+
+    /// Specifies the sender name and email address
+    ///
+    /// Used when you want to send emails on behalf of a different email address.
+    /// Must be a valid, activated sender.
+    #[serde(rename = "Sender")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sender: Option<EmailAddress>,
 
     /// The main recipients
     ///
     /// If a recipient is specified twice, it is counted only once
     #[serde(rename = "To")]
     #[serde(default)]
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub to: Vec<EmailAddress>,
 
     /// The copy recipients
@@ -54,6 +65,7 @@ pub struct Message {
     /// The email's subject
     #[serde(rename = "Subject")]
     #[serde(default)]
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub subject: String,
 
     /// The email's body in plain text form
@@ -122,13 +134,13 @@ pub struct Message {
     #[serde(rename = "CustomCampaign")]
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_campain: Option<String>,
+    pub custom_campaign: Option<String>,
 
     /// Block/unblock messages to be sent multiple times inside one campaign to the same contact
     #[serde(rename = "DeduplicateCampaign")]
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub deduplicate_campain: Option<bool>,
+    pub deduplicate_campaign: Option<bool>,
 
     /// Force or disable open tracking on this message
     ///
@@ -189,4 +201,13 @@ pub struct Message {
     #[serde(default)]
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     pub variables: HashMap<String, String>,
+
+    /// URL tags to append every URL link in the message
+    ///
+    /// The user needs to provide the query between the `?` and `#` characters in the URL.
+    /// The URLTags value needs to be URL-encoded
+    #[serde(rename = "MonitoringCategory")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub url_tags: Option<String>,
 }

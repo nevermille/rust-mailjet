@@ -39,7 +39,7 @@ impl EmailAddress {
     pub fn from_email(email: &str) -> Self {
         Self {
             email: email.to_string(),
-            ..Self::default()
+            ..Default::default()
         }
     }
 
@@ -54,5 +54,10 @@ impl EmailAddress {
             email: email.to_string(),
             name: name.to_string(),
         }
+    }
+
+    /// Returns `true` if no information were entered, `false` otherwise
+    pub fn is_empty(&self) -> bool {
+        self.name.is_empty() && self.email.is_empty()
     }
 }

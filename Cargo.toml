@@ -1,6 +1,6 @@
 [package]
 name = "mailjet_api_wrapper"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Camille Nevermind"]
 description = "Unofficial wrapper for Mailjet's API"
@@ -15,3 +15,4 @@ license = "GPL-3.0-or-later"
 serde_json = "1.0.96"
 serde = { version = "1.0.160", features = ["derive"] }
 curl = "0.4.44"
+url-builder = "0.1.1"

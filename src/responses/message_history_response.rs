@@ -14,18 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// I know it's annoying, but having undocumented code is out of question
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
-#![doc = include_str!("../README.md")]
+use serde::{Deserialize, Serialize};
 
-/// The data types
-pub mod data;
-/// The mailjet client
-mod mailjet;
-/// The request structures
-pub mod requests;
-/// The response structures
-pub mod responses;
+use crate::data::MessageHistoryData;
 
-pub use mailjet::Mailjet;
+/// The response to message history retrieving
+#[derive(Serialize, Deserialize, Default)]
+pub struct MessageHistoryResponse {
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Count")]
+    #[serde(default)]
+    pub count: i64,
+
+    /// An array containing a list of objects returned by the endpoint
+    #[serde(rename = "Data")]
+    #[serde(default)]
+    pub data: Vec<MessageHistoryData>,
+
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Total")]
+    #[serde(default)]
+    pub total: i64,
+}

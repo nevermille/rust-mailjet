@@ -14,6 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+/// The message information searching request
+mod message_information_request;
+/// The message searching request
+mod message_request;
 /// The email sending request
 mod send_request;
+
+pub use message_information_request::MessageInformationRequest;
+pub use message_request::MessageRequest;
 pub use send_request::SendRequest;
