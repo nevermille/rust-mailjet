@@ -19,18 +19,28 @@ use serde::{Deserialize, Serialize};
 /// An email attachment
 #[derive(Serialize, Deserialize, Default)]
 pub struct Attachment {
-    /// The MIME type
+    /// Defines the type of content being sent out using a MIME type
+    ///
+    /// See <https://www.iana.org/assignments/media-types/media-types.xhtml> for additional information
     #[serde(rename = "ContentType")]
     #[serde(default)]
     pub content_type: String,
 
-    /// The filename
+    /// The full name of the file (including the file extension)
     #[serde(rename = "Filename")]
     #[serde(default)]
     pub filename: String,
 
-    /// The file's contents encoded in Base64 format
+    /// Base64 encoded content of the attached file
     #[serde(rename = "Base64Content")]
     #[serde(default)]
     pub base64_content: String,
+
+    /// Name of the cid to be inserted in the HTML content of the message
+    ///
+    /// The value must be unique across all inline attachments in the message
+    #[serde(rename = "ContentID")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content_id: Option<String>,
 }
