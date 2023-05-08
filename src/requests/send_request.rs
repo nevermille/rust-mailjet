@@ -21,6 +21,13 @@ use serde_json::Value;
 /// The email sending request
 #[doc = include_str!("../../doc/send_basic_email.md")]
 #[doc = include_str!("../../doc/send_with_attached_files.md")]
+#[doc = include_str!("../../doc/send_in_bulk.md")]
+#[doc = include_str!("../../doc/set_global_properties.md")]
+#[doc = include_str!("../../doc/use_a_template.md")]
+#[doc = include_str!("../../doc/add_email_headers.md")]
+#[doc = include_str!("../../doc/tag_email_messages.md")]
+#[doc = include_str!("../../doc/group_into_a_campaign.md")]
+#[doc = include_str!("../../doc/add_url_tags.md")]
 #[derive(Serialize, Deserialize, Default)]
 pub struct SendRequest {
     /// The list of all emails to send
