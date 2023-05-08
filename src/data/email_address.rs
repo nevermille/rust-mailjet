@@ -55,4 +55,9 @@ impl EmailAddress {
             name: name.to_string(),
         }
     }
+
+    /// Returns `true` if no information were entered, `false` otherwise
+    pub fn is_empty(&self) -> bool {
+        self.name.is_empty() && self.email.is_empty()
+    }
 }
