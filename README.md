@@ -1,3 +1,5 @@
+[![Building](https://github.com/nevermille/rust-mailjet/actions/workflows/test-stable.yml/badge.svg)](https://github.com/nevermille/rust-mailjet/actions/workflows/test-stable.yml)
+
 # Unoficial wrapper for Mailjet API
 
 Rust wrapper for Mailjet's API
