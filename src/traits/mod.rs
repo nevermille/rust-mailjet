@@ -15,20 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-// I know it's annoying, but having undocumented code is out of question
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
-#![doc = include_str!("../README.md")]
+/// Requests that need to be encoded in URLs
+mod url_encoded_request;
 
-/// The data types
-pub mod data;
-/// The mailjet client
-mod mailjet;
-/// The request structures
-pub mod requests;
-/// The response structures
-pub mod responses;
-/// The traits
-mod traits;
-
-pub use mailjet::Mailjet;
+pub use url_encoded_request::UrlEncodedRequest;

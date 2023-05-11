@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::traits::UrlEncodedRequest;
 use url_builder::URLBuilder;
 
 /// The message searching request
@@ -88,13 +89,13 @@ pub struct MessageRequest {
     pub sort: Option<String>,
 }
 
-impl MessageRequest {
+impl UrlEncodedRequest for MessageRequest {
     /// Adds parameter to a URL builder
     ///
     /// # Parameters
     ///
     /// * `url_builder`: The URL builder
-    pub fn add_parameters_to_url(&self, url_builder: &mut URLBuilder) {
+    fn add_parameters_to_url(&self, url_builder: &mut URLBuilder) {
         if let Some(v) = self.campaign {
             url_builder.add_param("Campaign", &v.to_string());
         }

@@ -15,20 +15,14 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-// I know it's annoying, but having undocumented code is out of question
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
-#![doc = include_str!("../README.md")]
+use url_builder::URLBuilder;
 
-/// The data types
-pub mod data;
-/// The mailjet client
-mod mailjet;
-/// The request structures
-pub mod requests;
-/// The response structures
-pub mod responses;
-/// The traits
-mod traits;
-
-pub use mailjet::Mailjet;
+/// Requests that need to be encoded in URLs
+pub trait UrlEncodedRequest {
+    /// Adds parameter to a URL builder
+    ///
+    /// # Parameters
+    ///
+    /// * `url_builder`: The URL builder
+    fn add_parameters_to_url(&self, url_builder: &mut URLBuilder);
+}
