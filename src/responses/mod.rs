@@ -15,12 +15,12 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::data::{MessageData, MessageHistoryData, MessageInformationData};
+use crate::data::{Contact, MessageData, MessageHistoryData, MessageInformationData};
 
-/// The response to email sending
-mod send_response;
 /// The response base for multiple routes
 pub mod generic_response;
+/// The response to email sending
+mod send_response;
 
 /// The response to message history retrieving
 pub type MessageHistoryResponse = generic_response::GenericResponse<MessageHistoryData>;
@@ -28,5 +28,7 @@ pub type MessageHistoryResponse = generic_response::GenericResponse<MessageHisto
 pub type MessageInformationResponse = generic_response::GenericResponse<MessageInformationData>;
 /// The response to message information retrieving
 pub type MessageResponse = generic_response::GenericResponse<MessageData>;
+/// The response to contact retrieving
+pub type ContactResponse = generic_response::GenericResponse<Contact>;
 
 pub use send_response::SendResponse;

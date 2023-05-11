@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::traits::UrlEncodedRequest;
 use crate::{requests::*, responses::*};
 use curl::{
     easy::{Easy, List},
@@ -86,8 +87,42 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `url`: The URL where to request
+    fn delete(&self, url: &str) -> Result<(String, u32), Error> {
+        let mut curl = Easy::new();
+        let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
+
+        // Create the HTTP request
+        curl.url(url)?;
+        curl.username(self.api_key.as_str())?;
+        curl.password(self.api_secret.as_str())?;
+        curl.custom_request("DELETE")?;
+
+        {
+            // We need this for lifetime reasons
+            let mut transfer = curl.transfer();
+
+            // How we read mailjet's response
+            transfer.write_function(|buffer| {
+                let _ = &response.extend_from_slice(buffer);
+                Ok(buffer.len())
+            })?;
+
+            // Request execution
+            transfer.perform()?;
+        }
+
+        Ok((
+            String::from_utf8_lossy(&response).to_string(),
+            curl.response_code()?,
+        ))
+    }
+
+    /// Executes an API POST call to a URL
+    ///
+    /// # Parameters
+    ///
+    /// * `url`: The URL where to request
     /// * `data`: The data to write in the request's body
-    /// * `post`: If the request needs to be done with POST method
     fn post(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
         let mut curl = Easy::new();
         let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
@@ -101,6 +136,53 @@ impl Mailjet {
         curl.username(self.api_key.as_str())?;
         curl.password(self.api_secret.as_str())?;
         curl.post(true)?;
+
+        let mut header_list = List::new();
+        header_list.append("Content-Type: application/json")?;
+        curl.http_headers(header_list)?;
+
+        {
+            // We need this for lifetime reasons
+            let mut transfer = curl.transfer();
+
+            // How we pass data to mailjet
+            transfer.read_function(|buffer| Ok(raw_data.read(buffer).unwrap_or_default()))?;
+
+            // How we read mailjet's response
+            transfer.write_function(|buffer| {
+                let _ = &response.extend_from_slice(buffer);
+                Ok(buffer.len())
+            })?;
+
+            // Request execution
+            transfer.perform()?;
+        }
+
+        Ok((
+            String::from_utf8_lossy(&response).to_string(),
+            curl.response_code()?,
+        ))
+    }
+
+    /// Executes an API PUT call to a URL
+    ///
+    /// # Parameters
+    ///
+    /// * `url`: The URL where to request
+    /// * `data`: The data to write in the request's body
+    fn put(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
+        let mut curl = Easy::new();
+        let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
+
+        // Convert the data in a byte array
+        let data_json_string = data.to_string();
+        let mut raw_data = data_json_string.as_str().as_bytes();
+
+        // Create the HTTP request
+        curl.url(url)?;
+        curl.username(self.api_key.as_str())?;
+        curl.password(self.api_secret.as_str())?;
+        curl.put(true)?;
 
         let mut header_list = List::new();
         header_list.append("Content-Type: application/json")?;
@@ -261,15 +343,52 @@ impl Mailjet {
 
         Ok(serde_json::from_str(&response)?)
     }
+
+    /// Add a new unique contact to your global contact list and select its exclusion status
+    ///
+    /// # Parameters
+    ///
+    /// * `request`: The request containing contact data
+    pub fn contact_create(
+        &self,
+        request: &ContactRequest,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let j = serde_json::to_string(request)?;
+        let (response, _) = self.post("https://api.mailjet.com/v3/REST/contact", &j)?;
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Delete a contact
+    ///
+    /// This function works only if you are in a country under GDPR law
+    ///
+    /// # Parameters
+    ///
+    /// * `contact`: The contact's id
+    pub fn contact_delete(&self, contact_id: i128) -> Result<bool, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v4")
+            .add_route("contacts")
+            .add_route(&contact_id.to_string());
+
+        let (_, code) = self.delete(&ub.build())?;
+
+        Ok(code == 200)
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::requests::ContactRequest;
     use crate::{
         data::{EmailAddress, Message},
         requests::{MessageInformationRequest, MessageRequest, SendRequest},
         Mailjet,
     };
+    use rand::Rng;
 
     #[test]
     fn send_message() {
@@ -376,5 +495,29 @@ mod test {
 
         assert_eq!(response.count, 1);
         assert_eq!(response.data.len(), 1);
+    }
+
+    #[test]
+    fn contact_create_and_delete() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let mut rng = rand::thread_rng();
+        let email = format!("dummy.{}.{}@gmail.com", rng.gen::<i64>(), rng.gen::<i64>());
+        let contact = ContactRequest {
+            email: Some(email.clone()),
+            ..Default::default()
+        };
+        let response = mailjet.contact_create(&contact).unwrap();
+
+        assert_eq!(response.count, 1);
+        assert_eq!(response.data[0].email, email);
+
+        // Test delete only if you are in a GDPR country
+        if &std::env::var("MJ_CAN_DELETE_CONTACT").unwrap_or_default() == "1" {
+            let id = response.data[0].id;
+            assert!(mailjet.contact_delete(id).unwrap());
+        }
     }
 }

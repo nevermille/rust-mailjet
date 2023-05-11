@@ -18,6 +18,9 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Default)]
+/// Generic response base appearing in multiple routes
+///
+/// You shouldn't have to use this structure directly, use type aliases instead
 pub struct GenericResponse<T> {
     /// Indicates the number of objects in the `Data` array
     #[serde(rename = "Count")]

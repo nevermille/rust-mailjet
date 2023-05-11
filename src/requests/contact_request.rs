@@ -15,19 +15,29 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-/// The contact creation/update request
-mod contact_request;
-/// The contact retrieving request
-mod contact_search_request;
-/// The message information searching request
-mod message_information_request;
-/// The message searching request
-mod message_request;
-/// The email sending request
-mod send_request;
+use serde::{Deserialize, Serialize};
 
-pub use contact_request::ContactRequest;
-pub use contact_search_request::ContactSearchRequest;
-pub use message_information_request::MessageInformationRequest;
-pub use message_request::MessageRequest;
-pub use send_request::SendRequest;
+/// The contact creation/update request
+#[derive(Serialize, Deserialize, Default)]
+pub struct ContactRequest {
+    /// Indicates whether the contact is added to the exclusion list for campaigns or not
+    ///
+    /// An excluded contact will not be receiving any marketing emails
+    #[serde(rename = "IsExcludedFromCampaigns")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_excluded_from_campaigns: Option<bool>,
+
+    /// User-selected name for this contact
+    #[serde(rename = "Name")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    /// Contact email address
+    ///
+    /// This field is mandatory for creation, ignored for update
+    #[serde(rename = "Email")]
+    #[serde(default)]
+    pub email: Option<String>,
+}
