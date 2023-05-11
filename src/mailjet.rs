@@ -15,6 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+use crate::data::ContactIdentifier;
 use crate::traits::UrlEncodedRequest;
 use crate::{requests::*, responses::*};
 use curl::{
@@ -358,6 +359,82 @@ impl Mailjet {
         Ok(serde_json::from_str(&response)?)
     }
 
+    /// Retrieve a list of all contacts.
+    ///
+    /// Includes information about contact status and creation / activity timestamps
+    ///
+    /// # Parameters
+    ///
+    /// * `search`: The search arguments
+    pub fn contact_search(
+        &self,
+        search: &ContactSearchRequest,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contact");
+        search.add_parameters_to_url(&mut ub);
+
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Retrieve a specific contact
+    ///
+    /// Includes information about contact status and creation / activity timestamps
+    ///
+    /// # Parameters
+    ///
+    /// * `identifier`: The id or the email of the contact
+    pub fn contact_search_from_id_or_email(
+        &self,
+        identifier: &ContactIdentifier,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contact")
+            .add_route(&identifier.to_string());
+
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Update the user-given name and exclusion status of a specific contact
+    ///
+    /// # Paramètres
+    ///
+    /// * `identifier`: The id or the email of the contact to update
+    /// * `request`: The updated information
+    pub fn contact_update(
+        &self,
+        identifier: &ContactIdentifier,
+        request: &ContactRequest,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let j = serde_json::to_string(&request)?;
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contact")
+            .add_route(&identifier.to_string());
+
+        let (response, _) = self.put(&ub.build(), &j)?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
     /// Delete a contact
     ///
     /// This function works only if you are in a country under GDPR law
@@ -382,7 +459,8 @@ impl Mailjet {
 
 #[cfg(test)]
 mod test {
-    use crate::requests::ContactRequest;
+    use crate::data::ContactIdentifier;
+    use crate::requests::{ContactRequest, ContactSearchRequest};
     use crate::{
         data::{EmailAddress, Message},
         requests::{MessageInformationRequest, MessageRequest, SendRequest},
@@ -519,5 +597,61 @@ mod test {
             let id = response.data[0].id;
             assert!(mailjet.contact_delete(id).unwrap());
         }
+    }
+
+    #[test]
+    fn contact_get_all() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let response = mailjet
+            .contact_search(&ContactSearchRequest::default())
+            .unwrap();
+
+        assert!(response.count > 0);
+    }
+
+    #[test]
+    fn contact_get_from_id() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let contact1 = mailjet
+            .contact_search_from_id_or_email(&ContactIdentifier::ContactId(
+                std::env::var("MJ_CONTACT_ID").unwrap().parse().unwrap(),
+            ))
+            .unwrap();
+        let contact2 = mailjet
+            .contact_search_from_id_or_email(&ContactIdentifier::ContactEmail(
+                std::env::var("MJ_CONTACT_EMAIL").unwrap(),
+            ))
+            .unwrap();
+
+        assert_eq!(contact1.count, 1);
+        assert_eq!(contact2.count, 1);
+        assert_eq!(contact1.data[0].id, contact2.data[0].id);
+        assert_eq!(contact1.data[0].email, contact2.data[0].email);
+    }
+
+    #[test]
+    fn contact_update() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let mut rng = rand::thread_rng();
+        let response = mailjet
+            .contact_update(
+                &ContactIdentifier::ContactEmail(std::env::var("MJ_CONTACT_EMAIL").unwrap()),
+                &ContactRequest {
+                    name: Some(format!("Camille Nevermind {}", rng.gen::<i64>())),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+        assert_eq!(response.count, 1);
     }
 }

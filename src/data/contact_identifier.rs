@@ -5,3 +5,12 @@ pub enum ContactIdentifier {
     /// The email address of the contact your want to retrieve
     ContactEmail(String),
 }
+
+impl ToString for ContactIdentifier {
+    fn to_string(&self) -> String {
+        match self {
+            ContactIdentifier::ContactId(v) => v.to_string(),
+            ContactIdentifier::ContactEmail(v) => v.to_string(),
+        }
+    }
+}

@@ -36,8 +36,10 @@ pub struct ContactRequest {
 
     /// Contact email address
     ///
-    /// This field is mandatory for creation, ignored for update
+    /// This field is mandatory for creation. Mailjet doesn't tell you but
+    /// you can update an email with this
     #[serde(rename = "Email")]
     #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 }
