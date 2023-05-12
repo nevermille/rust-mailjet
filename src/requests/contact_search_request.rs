@@ -19,6 +19,7 @@ use crate::traits::UrlEncodedRequest;
 use url_builder::URLBuilder;
 
 /// The contact retrieving request
+#[doc = include_str!("../../doc/retrieve_a_contact.md")]
 #[derive(Default)]
 pub struct ContactSearchRequest {
     /// Retrieves only contacts targeted by this Campaign ID

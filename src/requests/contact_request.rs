@@ -18,6 +18,8 @@
 use serde::{Deserialize, Serialize};
 
 /// The contact creation/update request
+#[doc = include_str!("../../doc/create_a_contact.md")]
+#[doc = include_str!("../../doc/delete_a_contact.md")]
 #[derive(Serialize, Deserialize, Default)]
 pub struct ContactRequest {
     /// Indicates whether the contact is added to the exclusion list for campaigns or not

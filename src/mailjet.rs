@@ -36,9 +36,16 @@ pub struct Mailjet {
 
 /// HTTP Methods
 pub enum RequestType {
+    /// HTTP GET
     Get,
+
+    /// HTTP POST
     Post,
+
+    /// HTTP PUT
     Put,
+
+    /// HTTP DELETE
     Delete,
 }
 

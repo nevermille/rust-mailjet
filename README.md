@@ -29,11 +29,11 @@ let mailjet = Mailjet::from_api_keys("your_api_key", "your_api_secret");
 let res = mailjet.message(&MessageRequest::default()).unwrap_or_default();
 ```
 
-Those functions have an explicit name, you'll find them easily in the complete documentation or directly in your IDE.
+Those functions have an explicit name, you'll find them easily in the complete documentation or directly in your IDE. In the case of multiple routes having the same name, the functions will be prefixed by an action verb like `_create` or `_update`.
 
 # Simple routes
 
-Those routes only have a few variables in the url and have no parameters, they appear in the API reference like `/message/{message_ID}`. In this case, the function name will be suffixed by `_from_id`.
+Those routes only have a few variables in the url and have no parameters, they appear in the API reference like `/message/{message_ID}`. In this case, the function name will be suffixed by `_from_*`.
 
 ```rust
 use mailjet_api_wrapper::Mailjet;
@@ -45,7 +45,7 @@ let res = mailjet.message_from_id(123456789).unwrap_or_default();
 
 # Complex routes
 
-Those routes have parameters to append at the end of the URL like `/message` or `/send`. In this case, you need to build a request object before passing it to the function. You can find them in the `requests` module.
+Those routes have parameters to append at the end of the URL or a JSON body like `/message` or `/send`. In this case, you need to build a request object before passing it to the function. You can find them in the `requests` module.
 
 ```rust
 use mailjet_api_wrapper::Mailjet;
@@ -59,6 +59,30 @@ let request = MessageInformationRequest {
 };
 
 let res = mailjet.message_information(&request).unwrap_or_default();
+```
+
+# Hybrid routes
+
+Those routes have both a URL variable and a body/URL parameters like `/contact` (PUT), in this case, the function takes 2+ arguments, the first ones are the URL variables and the last one, the request object
+
+```rust
+use mailjet_api_wrapper::Mailjet;
+use mailjet_api_wrapper::requests::ContactRequest;
+use mailjet_api_wrapper::data::ContactIdentifier;
+
+let mailjet = Mailjet::from_api_keys("your_api_key", "your_api_secret");
+
+let request = ContactRequest {
+    name: Some("New Name".to_string()), // Corresponds to parameter CampaignID
+    ..Default::default()
+};
+
+let response = mailjet
+    .contact_update(
+        &ContactIdentifier::ContactEmail("passenger1@mailjet.com".to_string()),
+        &request,
+    )
+    .unwrap_or_default();
 ```
 
 # Response
