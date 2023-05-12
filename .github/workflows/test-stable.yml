@@ -3,7 +3,10 @@
 name: Test code on stable environment
 
 # Controls when the workflow will run
-on: [push]
+on:
+  push:
+  schedule:
+    - cron: '* * * * 0'
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -40,6 +43,8 @@ jobs:
       MJ_CAN_DELETE_CONTACT: ${{ secrets.MJ_CAN_DELETE_CONTACT }}
       MJ_CONTACT_EMAIL: ${{ secrets.MJ_CONTACT_EMAIL }}
       MJ_CONTACT_ID: ${{ secrets.MJ_CONTACT_ID }}
+      MJ_CONTACTS_LIST_ADDRESS: ${{ secrets.MJ_CONTACTS_LIST_ADDRESS }}
+      MJ_CONTACTS_LIST_ID: ${{ secrets.MJ_CONTACTS_LIST_ID }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
