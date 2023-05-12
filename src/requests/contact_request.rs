@@ -17,32 +17,31 @@
 
 use serde::{Deserialize, Serialize};
 
-/// A successfully sent email
+/// The contact creation/update request
+#[doc = include_str!("../../doc/create_a_contact.md")]
+#[doc = include_str!("../../doc/delete_a_contact.md")]
 #[derive(Serialize, Deserialize, Default)]
-pub struct ResponseSuccess {
-    /// The email address where this email has been sent
+pub struct ContactRequest {
+    /// Indicates whether the contact is added to the exclusion list for campaigns or not
+    ///
+    /// An excluded contact will not be receiving any marketing emails
+    #[serde(rename = "IsExcludedFromCampaigns")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_excluded_from_campaigns: Option<bool>,
+
+    /// User-selected name for this contact
+    #[serde(rename = "Name")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    /// Contact email address
+    ///
+    /// This field is mandatory for creation. Mailjet doesn't tell you but
+    /// you can update an email with this
     #[serde(rename = "Email")]
     #[serde(default)]
-    pub email: String,
-
-    /// The mailjet's email unique id
-    ///
-    /// Example of an id: `cb927469-36fd-4c02-bce4-0d199929a207`
-    #[serde(rename = "MessageUUID")]
-    #[serde(default)]
-    pub message_uuid: String,
-
-    /// The legacy mailjet's email unique id
-    ///
-    /// Example of an id: `70650219165027410`
-    #[serde(rename = "MessageID")]
-    #[serde(default)]
-    pub message_id: i128,
-
-    /// The URL to message info
-    ///
-    /// Example of a URL: `https://api.mailjet.com/v3/REST/message/70650219165027410`
-    #[serde(rename = "MessageHref")]
-    #[serde(default)]
-    pub message_href: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
 }

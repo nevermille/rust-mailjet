@@ -23,3 +23,6 @@ Cargo.lock
 
 # MacOS internal files
 **/.DS_Store
+
+# CLion
+.idea

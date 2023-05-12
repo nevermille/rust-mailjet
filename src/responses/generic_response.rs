@@ -15,34 +15,25 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 
-/// A successfully sent email
 #[derive(Serialize, Deserialize, Default)]
-pub struct ResponseSuccess {
-    /// The email address where this email has been sent
-    #[serde(rename = "Email")]
+/// Generic response base appearing in multiple routes
+///
+/// You shouldn't have to use this structure directly, use type aliases instead
+pub struct GenericResponse<T> {
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Count")]
     #[serde(default)]
-    pub email: String,
+    pub count: i64,
 
-    /// The mailjet's email unique id
-    ///
-    /// Example of an id: `cb927469-36fd-4c02-bce4-0d199929a207`
-    #[serde(rename = "MessageUUID")]
+    /// An array containing a list of objects returned by the endpoint
+    #[serde(rename = "Data")]
     #[serde(default)]
-    pub message_uuid: String,
+    pub data: Vec<T>,
 
-    /// The legacy mailjet's email unique id
-    ///
-    /// Example of an id: `70650219165027410`
-    #[serde(rename = "MessageID")]
+    /// Indicates the number of objects in the `Data` array
+    #[serde(rename = "Total")]
     #[serde(default)]
-    pub message_id: i128,
-
-    /// The URL to message info
-    ///
-    /// Example of a URL: `https://api.mailjet.com/v3/REST/message/70650219165027410`
-    #[serde(rename = "MessageHref")]
-    #[serde(default)]
-    pub message_href: String,
+    pub total: i64,
 }

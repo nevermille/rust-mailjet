@@ -15,34 +15,14 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use serde::{Deserialize, Serialize};
+use url_builder::URLBuilder;
 
-/// A successfully sent email
-#[derive(Serialize, Deserialize, Default)]
-pub struct ResponseSuccess {
-    /// The email address where this email has been sent
-    #[serde(rename = "Email")]
-    #[serde(default)]
-    pub email: String,
-
-    /// The mailjet's email unique id
+/// Requests that need to be encoded in URLs
+pub trait UrlEncodedRequest {
+    /// Adds parameter to a URL builder
     ///
-    /// Example of an id: `cb927469-36fd-4c02-bce4-0d199929a207`
-    #[serde(rename = "MessageUUID")]
-    #[serde(default)]
-    pub message_uuid: String,
-
-    /// The legacy mailjet's email unique id
+    /// # Parameters
     ///
-    /// Example of an id: `70650219165027410`
-    #[serde(rename = "MessageID")]
-    #[serde(default)]
-    pub message_id: i128,
-
-    /// The URL to message info
-    ///
-    /// Example of a URL: `https://api.mailjet.com/v3/REST/message/70650219165027410`
-    #[serde(rename = "MessageHref")]
-    #[serde(default)]
-    pub message_href: String,
+    /// * `url_builder`: The URL builder
+    fn add_parameters_to_url(&self, url_builder: &mut URLBuilder);
 }

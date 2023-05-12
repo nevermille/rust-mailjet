@@ -45,6 +45,9 @@ jobs:
       MJ_SECRET: ${{ secrets.MJ_SECRET }}
       MJ_MESSAGE_ID: ${{ secrets.MJ_MESSAGE_ID }}
       MJ_CAMPAIGN_ID: ${{ secrets.MJ_CAMPAIGN_ID }}
+      MJ_CAN_DELETE_CONTACT: ${{ secrets.MJ_CAN_DELETE_CONTACT }}
+      MJ_CONTACT_EMAIL: ${{ secrets.MJ_CONTACT_EMAIL }}
+      MJ_CONTACT_ID: ${{ secrets.MJ_CONTACT_ID }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:

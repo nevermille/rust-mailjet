@@ -15,14 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::data::ResponseMessage;
-use serde::{Deserialize, Serialize};
+/// Requests that need to be encoded in URLs
+mod url_encoded_request;
 
-/// The response to email sending
-#[derive(Serialize, Deserialize, Default)]
-pub struct SendResponse {
-    /// The status of emails sent, in sending order
-    #[serde(rename = "Messages")]
-    #[serde(default)]
-    pub messages: Vec<ResponseMessage>,
-}
+pub use url_encoded_request::UrlEncodedRequest;

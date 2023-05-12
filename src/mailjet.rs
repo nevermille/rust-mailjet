@@ -1,19 +1,22 @@
 // This file is part of rust-mailjet <https://github.com/nevermille/rust-mailjet>
 // Copyright (C) 2023 Camille Nevermind
-
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+use crate::data::ContactIdentifier;
+use crate::traits::UrlEncodedRequest;
 use crate::{requests::*, responses::*};
 use curl::{
     easy::{Easy, List},
@@ -31,6 +34,21 @@ pub struct Mailjet {
     pub api_secret: String,
 }
 
+/// HTTP Methods
+pub enum RequestType {
+    /// HTTP GET
+    Get,
+
+    /// HTTP POST
+    Post,
+
+    /// HTTP PUT
+    Put,
+
+    /// HTTP DELETE
+    Delete,
+}
+
 impl Mailjet {
     /// Creates a new instance with API keys
     /// You can get yours at <https://app.mailjet.com/account/apikeys>
@@ -46,23 +64,62 @@ impl Mailjet {
         }
     }
 
-    /// Executes an API POST call to a URL
+    /// Executes a request to mailjet
     ///
     /// # Parameters
     ///
     /// * `url`: The URL where to request
-    fn get(&self, url: &str) -> Result<(String, u32), Error> {
+    /// * `data`: The data to send if any
+    /// * `request_type`: The HTTP request type
+    fn exec(
+        &self,
+        url: &str,
+        data: Option<String>,
+        request_type: RequestType,
+    ) -> Result<(String, u32), Error> {
         let mut curl = Easy::new();
         let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
+
+        // Extract the data if any for lifetime reasons
+        let data_string = match data {
+            Some(v) => v,
+            None => String::new(),
+        };
+
+        // Convert the data in a byte array
+        let mut raw_data = match data_string.is_empty() {
+            false => data_string.as_str().as_bytes(),
+            true => &[],
+        };
 
         // Create the HTTP request
         curl.url(url)?;
         curl.username(self.api_key.as_str())?;
         curl.password(self.api_secret.as_str())?;
 
+        // Change HTTP request
+        match request_type {
+            RequestType::Post => curl.post(true)?,
+            RequestType::Put => curl.put(true)?,
+            RequestType::Delete => curl.custom_request("DELETE")?,
+            _ => (),
+        }
+
+        // Change body type
+        if matches!(request_type, RequestType::Post) || matches!(request_type, RequestType::Put) {
+            let mut header_list = List::new();
+            header_list.append("Content-Type: application/json")?;
+            curl.http_headers(header_list)?;
+        }
+
         {
             // We need this for lifetime reasons
             let mut transfer = curl.transfer();
+
+            // How we pass data to mailjet
+            if !raw_data.is_empty() {
+                transfer.read_function(|buffer| Ok(raw_data.read(buffer).unwrap_or_default()))?
+            };
 
             // How we read mailjet's response
             transfer.write_function(|buffer| {
@@ -85,47 +142,37 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `url`: The URL where to request
+    fn get(&self, url: &str) -> Result<(String, u32), Error> {
+        self.exec(url, None, RequestType::Get)
+    }
+
+    /// Executes an API DELETE call to a URL
+    ///
+    /// # Parameters
+    ///
+    /// * `url`: The URL where to request
+    fn delete(&self, url: &str) -> Result<(String, u32), Error> {
+        self.exec(url, None, RequestType::Delete)
+    }
+
+    /// Executes an API POST call to a URL
+    ///
+    /// # Parameters
+    ///
+    /// * `url`: The URL where to request
     /// * `data`: The data to write in the request's body
-    /// * `post`: If the request needs to be done with POST method
     fn post(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
-        let mut curl = Easy::new();
-        let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
+        self.exec(url, Some(data.to_string()), RequestType::Post)
+    }
 
-        // Convert the data in a byte array
-        let data_json_string = data.to_string();
-        let mut raw_data = data_json_string.as_str().as_bytes();
-
-        // Create the HTTP request
-        curl.url(url)?;
-        curl.username(self.api_key.as_str())?;
-        curl.password(self.api_secret.as_str())?;
-        curl.post(true)?;
-
-        let mut header_list = List::new();
-        header_list.append("Content-Type: application/json")?;
-        curl.http_headers(header_list)?;
-
-        {
-            // We need this for lifetime reasons
-            let mut transfer = curl.transfer();
-
-            // How we pass data to mailjet
-            transfer.read_function(|buffer| Ok(raw_data.read(buffer).unwrap_or_default()))?;
-
-            // How we read mailjet's response
-            transfer.write_function(|buffer| {
-                let _ = &response.extend_from_slice(buffer);
-                Ok(buffer.len())
-            })?;
-
-            // Request execution
-            transfer.perform()?;
-        }
-
-        Ok((
-            String::from_utf8_lossy(&response).to_string(),
-            curl.response_code()?,
-        ))
+    /// Executes an API PUT call to a URL
+    ///
+    /// # Parameters
+    ///
+    /// * `url`: The URL where to request
+    /// * `data`: The data to write in the request's body
+    fn put(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
+        self.exec(url, Some(data.to_string()), RequestType::Put)
     }
 
     /// Sends emails via Send API v3.1
@@ -260,15 +307,129 @@ impl Mailjet {
 
         Ok(serde_json::from_str(&response)?)
     }
+
+    /// Add a new unique contact to your global contact list and select its exclusion status
+    ///
+    /// # Parameters
+    ///
+    /// * `request`: The request containing contact data
+    pub fn contact_create(
+        &self,
+        request: &ContactRequest,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let j = serde_json::to_string(request)?;
+        let (response, _) = self.post("https://api.mailjet.com/v3/REST/contact", &j)?;
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Retrieve a list of all contacts.
+    ///
+    /// Includes information about contact status and creation / activity timestamps
+    ///
+    /// # Parameters
+    ///
+    /// * `search`: The search arguments
+    pub fn contact_search(
+        &self,
+        search: &ContactSearchRequest,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contact");
+        search.add_parameters_to_url(&mut ub);
+
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Retrieve a specific contact
+    ///
+    /// Includes information about contact status and creation / activity timestamps
+    ///
+    /// # Parameters
+    ///
+    /// * `identifier`: The id or the email of the contact
+    pub fn contact_search_from_id_or_email(
+        &self,
+        identifier: &ContactIdentifier,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contact")
+            .add_route(&identifier.to_string());
+
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Update the user-given name and exclusion status of a specific contact
+    ///
+    /// # Paramètres
+    ///
+    /// * `identifier`: The id or the email of the contact to update
+    /// * `request`: The updated information
+    pub fn contact_update(
+        &self,
+        identifier: &ContactIdentifier,
+        request: &ContactRequest,
+    ) -> Result<ContactResponse, Box<dyn StdError>> {
+        let j = serde_json::to_string(&request)?;
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contact")
+            .add_route(&identifier.to_string());
+
+        let (response, _) = self.put(&ub.build(), &j)?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Delete a contact
+    ///
+    /// This function works only if you are in a country under GDPR law
+    ///
+    /// # Parameters
+    ///
+    /// * `contact`: The contact's id
+    pub fn contact_delete(&self, contact_id: i128) -> Result<bool, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v4")
+            .add_route("contacts")
+            .add_route(&contact_id.to_string());
+
+        let (_, code) = self.delete(&ub.build())?;
+
+        Ok(code == 200)
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use crate::data::ContactIdentifier;
+    use crate::requests::{ContactRequest, ContactSearchRequest};
     use crate::{
         data::{EmailAddress, Message},
         requests::{MessageInformationRequest, MessageRequest, SendRequest},
         Mailjet,
     };
+    use rand::Rng;
 
     #[test]
     fn send_message() {
@@ -375,5 +536,85 @@ mod test {
 
         assert_eq!(response.count, 1);
         assert_eq!(response.data.len(), 1);
+    }
+
+    #[test]
+    fn contact_create_and_delete() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let mut rng = rand::thread_rng();
+        let email = format!("dummy.{}.{}@gmail.com", rng.gen::<i64>(), rng.gen::<i64>());
+        let contact = ContactRequest {
+            email: Some(email.clone()),
+            ..Default::default()
+        };
+        let response = mailjet.contact_create(&contact).unwrap();
+
+        assert_eq!(response.count, 1);
+        assert_eq!(response.data[0].email, email);
+
+        // Test delete only if you are in a GDPR country
+        if &std::env::var("MJ_CAN_DELETE_CONTACT").unwrap_or_default() == "1" {
+            let id = response.data[0].id;
+            assert!(mailjet.contact_delete(id).unwrap());
+        }
+    }
+
+    #[test]
+    fn contact_get_all() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let response = mailjet
+            .contact_search(&ContactSearchRequest::default())
+            .unwrap();
+
+        assert!(response.count > 0);
+    }
+
+    #[test]
+    fn contact_get_from_id() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let contact1 = mailjet
+            .contact_search_from_id_or_email(&ContactIdentifier::ContactId(
+                std::env::var("MJ_CONTACT_ID").unwrap().parse().unwrap(),
+            ))
+            .unwrap();
+        let contact2 = mailjet
+            .contact_search_from_id_or_email(&ContactIdentifier::ContactEmail(
+                std::env::var("MJ_CONTACT_EMAIL").unwrap(),
+            ))
+            .unwrap();
+
+        assert_eq!(contact1.count, 1);
+        assert_eq!(contact2.count, 1);
+        assert_eq!(contact1.data[0].id, contact2.data[0].id);
+        assert_eq!(contact1.data[0].email, contact2.data[0].email);
+    }
+
+    #[test]
+    fn contact_update() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let mut rng = rand::thread_rng();
+        let response = mailjet
+            .contact_update(
+                &ContactIdentifier::ContactEmail(std::env::var("MJ_CONTACT_EMAIL").unwrap()),
+                &ContactRequest {
+                    name: Some(format!("Camille Nevermind {}", rng.gen::<i64>())),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+
+        assert_eq!(response.count, 1);
     }
 }
