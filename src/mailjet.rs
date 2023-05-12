@@ -34,6 +34,14 @@ pub struct Mailjet {
     pub api_secret: String,
 }
 
+/// HTTP Methods
+pub enum RequestType {
+    Get,
+    Post,
+    Put,
+    Delete,
+}
+
 impl Mailjet {
     /// Creates a new instance with API keys
     /// You can get yours at <https://app.mailjet.com/account/apikeys>
@@ -49,23 +57,62 @@ impl Mailjet {
         }
     }
 
-    /// Executes an API POST call to a URL
+    /// Executes a request to mailjet
     ///
     /// # Parameters
     ///
     /// * `url`: The URL where to request
-    fn get(&self, url: &str) -> Result<(String, u32), Error> {
+    /// * `data`: The data to send if any
+    /// * `request_type`: The HTTP request type
+    fn exec(
+        &self,
+        url: &str,
+        data: Option<String>,
+        request_type: RequestType,
+    ) -> Result<(String, u32), Error> {
         let mut curl = Easy::new();
         let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
+
+        // Extract the data if any for lifetime reasons
+        let data_string = match data {
+            Some(v) => v,
+            None => String::new(),
+        };
+
+        // Convert the data in a byte array
+        let mut raw_data = match data_string.is_empty() {
+            false => data_string.as_str().as_bytes(),
+            true => &[],
+        };
 
         // Create the HTTP request
         curl.url(url)?;
         curl.username(self.api_key.as_str())?;
         curl.password(self.api_secret.as_str())?;
 
+        // Change HTTP request
+        match request_type {
+            RequestType::Post => curl.post(true)?,
+            RequestType::Put => curl.put(true)?,
+            RequestType::Delete => curl.custom_request("DELETE")?,
+            _ => (),
+        }
+
+        // Change body type
+        if matches!(request_type, RequestType::Post) || matches!(request_type, RequestType::Put) {
+            let mut header_list = List::new();
+            header_list.append("Content-Type: application/json")?;
+            curl.http_headers(header_list)?;
+        }
+
         {
             // We need this for lifetime reasons
             let mut transfer = curl.transfer();
+
+            // How we pass data to mailjet
+            if !raw_data.is_empty() {
+                transfer.read_function(|buffer| Ok(raw_data.read(buffer).unwrap_or_default()))?
+            };
 
             // How we read mailjet's response
             transfer.write_function(|buffer| {
@@ -88,34 +135,17 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `url`: The URL where to request
+    fn get(&self, url: &str) -> Result<(String, u32), Error> {
+        self.exec(url, None, RequestType::Get)
+    }
+
+    /// Executes an API DELETE call to a URL
+    ///
+    /// # Parameters
+    ///
+    /// * `url`: The URL where to request
     fn delete(&self, url: &str) -> Result<(String, u32), Error> {
-        let mut curl = Easy::new();
-        let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
-
-        // Create the HTTP request
-        curl.url(url)?;
-        curl.username(self.api_key.as_str())?;
-        curl.password(self.api_secret.as_str())?;
-        curl.custom_request("DELETE")?;
-
-        {
-            // We need this for lifetime reasons
-            let mut transfer = curl.transfer();
-
-            // How we read mailjet's response
-            transfer.write_function(|buffer| {
-                let _ = &response.extend_from_slice(buffer);
-                Ok(buffer.len())
-            })?;
-
-            // Request execution
-            transfer.perform()?;
-        }
-
-        Ok((
-            String::from_utf8_lossy(&response).to_string(),
-            curl.response_code()?,
-        ))
+        self.exec(url, None, RequestType::Delete)
     }
 
     /// Executes an API POST call to a URL
@@ -125,44 +155,7 @@ impl Mailjet {
     /// * `url`: The URL where to request
     /// * `data`: The data to write in the request's body
     fn post(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
-        let mut curl = Easy::new();
-        let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
-
-        // Convert the data in a byte array
-        let data_json_string = data.to_string();
-        let mut raw_data = data_json_string.as_str().as_bytes();
-
-        // Create the HTTP request
-        curl.url(url)?;
-        curl.username(self.api_key.as_str())?;
-        curl.password(self.api_secret.as_str())?;
-        curl.post(true)?;
-
-        let mut header_list = List::new();
-        header_list.append("Content-Type: application/json")?;
-        curl.http_headers(header_list)?;
-
-        {
-            // We need this for lifetime reasons
-            let mut transfer = curl.transfer();
-
-            // How we pass data to mailjet
-            transfer.read_function(|buffer| Ok(raw_data.read(buffer).unwrap_or_default()))?;
-
-            // How we read mailjet's response
-            transfer.write_function(|buffer| {
-                let _ = &response.extend_from_slice(buffer);
-                Ok(buffer.len())
-            })?;
-
-            // Request execution
-            transfer.perform()?;
-        }
-
-        Ok((
-            String::from_utf8_lossy(&response).to_string(),
-            curl.response_code()?,
-        ))
+        self.exec(url, Some(data.to_string()), RequestType::Post)
     }
 
     /// Executes an API PUT call to a URL
@@ -172,44 +165,7 @@ impl Mailjet {
     /// * `url`: The URL where to request
     /// * `data`: The data to write in the request's body
     fn put(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
-        let mut curl = Easy::new();
-        let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
-
-        // Convert the data in a byte array
-        let data_json_string = data.to_string();
-        let mut raw_data = data_json_string.as_str().as_bytes();
-
-        // Create the HTTP request
-        curl.url(url)?;
-        curl.username(self.api_key.as_str())?;
-        curl.password(self.api_secret.as_str())?;
-        curl.put(true)?;
-
-        let mut header_list = List::new();
-        header_list.append("Content-Type: application/json")?;
-        curl.http_headers(header_list)?;
-
-        {
-            // We need this for lifetime reasons
-            let mut transfer = curl.transfer();
-
-            // How we pass data to mailjet
-            transfer.read_function(|buffer| Ok(raw_data.read(buffer).unwrap_or_default()))?;
-
-            // How we read mailjet's response
-            transfer.write_function(|buffer| {
-                let _ = &response.extend_from_slice(buffer);
-                Ok(buffer.len())
-            })?;
-
-            // Request execution
-            transfer.perform()?;
-        }
-
-        Ok((
-            String::from_utf8_lossy(&response).to_string(),
-            curl.response_code()?,
-        ))
+        self.exec(url, Some(data.to_string()), RequestType::Put)
     }
 
     /// Sends emails via Send API v3.1
