@@ -21,6 +21,10 @@ mod attachment;
 mod contact;
 /// The contact identifier
 mod contact_identifier;
+/// A contact list information
+mod contacts_list;
+/// The contact list identifier
+mod contacts_list_identifier;
 /// An email address
 mod email_address;
 /// An email
@@ -41,6 +45,8 @@ mod response_success;
 pub use attachment::Attachment;
 pub use contact::Contact;
 pub use contact_identifier::ContactIdentifier;
+pub use contacts_list::ContactsList;
+pub use contacts_list_identifier::ContactsListIdentifier;
 pub use email_address::EmailAddress;
 pub use message::Message;
 pub use message_data::MessageData;

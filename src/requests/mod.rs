@@ -19,6 +19,10 @@
 mod contact_request;
 /// The contact retrieving request
 mod contact_search_request;
+/// The contact list creation/update request
+mod contacts_list_request;
+/// The contact list retrieving request
+mod contacts_list_search_request;
 /// The message information searching request
 mod message_information_request;
 /// The message searching request
@@ -28,6 +32,8 @@ mod send_request;
 
 pub use contact_request::ContactRequest;
 pub use contact_search_request::ContactSearchRequest;
+pub use contacts_list_request::ContactsListRequest;
+pub use contacts_list_search_request::ContactsListSearchRequest;
 pub use message_information_request::MessageInformationRequest;
 pub use message_request::MessageRequest;
 pub use send_request::SendRequest;

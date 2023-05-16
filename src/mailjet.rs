@@ -15,7 +15,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-use crate::data::ContactIdentifier;
+use crate::data::{ContactIdentifier, ContactsListIdentifier};
 use crate::traits::UrlEncodedRequest;
 use crate::{requests::*, responses::*};
 use curl::{
@@ -374,7 +374,7 @@ impl Mailjet {
 
     /// Update the user-given name and exclusion status of a specific contact
     ///
-    /// # Paramètres
+    /// # Parameters
     ///
     /// * `identifier`: The id or the email of the contact to update
     /// * `request`: The updated information
@@ -404,7 +404,7 @@ impl Mailjet {
     ///
     /// # Parameters
     ///
-    /// * `contact`: The contact's id
+    /// * `contact_id`: The contact's id
     pub fn contact_delete(&self, contact_id: i128) -> Result<bool, Box<dyn StdError>> {
         let mut ub = URLBuilder::new();
 
@@ -416,14 +416,132 @@ impl Mailjet {
 
         let (_, code) = self.delete(&ub.build())?;
 
-        Ok(code == 200)
+        Ok((200..300).contains(&code))
+    }
+
+    /// Create a new contact list
+    ///
+    /// # Parameters
+    ///
+    /// * `request`: The request containing contacts list data
+    pub fn contacts_list_create(
+        &self,
+        request: &ContactsListRequest,
+    ) -> Result<ContactsListResponse, Box<dyn StdError>> {
+        let j = serde_json::to_string(request)?;
+        let (response, _) = self.post("https://api.mailjet.com/v3/REST/contactslist", &j)?;
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Retrieve details for all contact lists - name, subscriber count,
+    /// creation timestamp, deletion status
+    ///
+    /// # Parameters
+    ///
+    /// * `search`: The search arguments
+    pub fn contacts_list_search(
+        &self,
+        search: &ContactsListSearchRequest,
+    ) -> Result<ContactsListResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contactslist");
+
+        search.add_parameters_to_url(&mut ub);
+
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Retrieve details for a specific contact list - name, subscriber count,
+    /// creation timestamp, deletion status
+    ///
+    /// # Parameters
+    ///
+    /// * `identifier`: The id or the address of the contacts list to retrieve
+    pub fn contacts_list_search_from_id_or_address(
+        &self,
+        identifier: &ContactsListIdentifier,
+    ) -> Result<ContactsListResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contactslist")
+            .add_route(&identifier.to_string());
+
+        let (response, _) = self.get(&ub.build())?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Update a specific contact list by changing its name and / or deletion status
+    ///
+    /// # Parameters
+    ///
+    /// * `identifier`: The id or the email of the contact to update
+    /// * `request`: The updated information
+    pub fn contacts_list_update(
+        &self,
+        identifier: &ContactsListIdentifier,
+        request: &ContactsListRequest,
+    ) -> Result<ContactsListResponse, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+        let j = serde_json::to_string(request)?;
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contactslist")
+            .add_route(&identifier.to_string());
+
+        let (response, _) = self.put(&ub.build(), &j)?;
+
+        Ok(serde_json::from_str(&response)?)
+    }
+
+    /// Delete a contact list
+    ///
+    /// The ContactsList object will continue to exist with Deleted status for
+    /// 30 days, and can be reinstated by changing the value of IsDeleted to false
+    /// via an update
+    ///
+    /// # Parameters
+    ///
+    /// * `identifier`: The id or the address of the contacts list to delete
+    pub fn contacts_list_delete(
+        &self,
+        identifier: &ContactsListIdentifier,
+    ) -> Result<bool, Box<dyn StdError>> {
+        let mut ub = URLBuilder::new();
+
+        ub.set_protocol("https")
+            .set_host("api.mailjet.com")
+            .add_route("v3")
+            .add_route("REST")
+            .add_route("contactslist")
+            .add_route(&identifier.to_string());
+
+        let (_, code) = self.delete(&ub.build())?;
+
+        Ok((200..300).contains(&code))
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::data::ContactIdentifier;
-    use crate::requests::{ContactRequest, ContactSearchRequest};
+    use crate::data::{ContactIdentifier, ContactsListIdentifier};
+    use crate::requests::{
+        ContactRequest, ContactSearchRequest, ContactsListRequest, ContactsListSearchRequest,
+    };
     use crate::{
         data::{EmailAddress, Message},
         requests::{MessageInformationRequest, MessageRequest, SendRequest},
@@ -616,5 +734,89 @@ mod test {
             .unwrap();
 
         assert_eq!(response.count, 1);
+    }
+
+    #[test]
+    fn contacts_list_create_and_delete() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let mut rng = rand::thread_rng();
+        let list_name = format!("List {}", rng.gen::<i64>());
+        let contact_list = ContactsListRequest {
+            name: Some(list_name.clone()),
+            ..Default::default()
+        };
+
+        let response = mailjet.contacts_list_create(&contact_list).unwrap();
+
+        assert_eq!(response.count, 1);
+        assert_eq!(response.data[0].name, list_name);
+
+        let id = response.data[0].id;
+
+        assert!(mailjet
+            .contacts_list_delete(&ContactsListIdentifier::ListId(id))
+            .unwrap());
+    }
+
+    #[test]
+    fn contact_list_retrieve_all() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let response = mailjet
+            .contacts_list_search(&ContactsListSearchRequest::default())
+            .unwrap();
+
+        assert!(response.count > 0);
+    }
+
+    #[test]
+    fn contact_list_retrieve_from_identifier() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let response_id = mailjet
+            .contacts_list_search_from_id_or_address(&ContactsListIdentifier::ListId(
+                std::env::var("MJ_CONTACTS_LIST_ID")
+                    .unwrap()
+                    .parse()
+                    .unwrap(),
+            ))
+            .unwrap();
+
+        assert_eq!(response_id.count, 1);
+    }
+
+    #[test]
+    fn contact_list_update() {
+        let mailjet = Mailjet::from_api_keys(
+            &std::env::var("MJ_KEY").unwrap(),
+            &std::env::var("MJ_SECRET").unwrap(),
+        );
+        let mut rng = rand::thread_rng();
+        let new_name = format!("List {}", rng.gen::<i64>());
+        let request = ContactsListRequest {
+            name: Some(new_name.clone()),
+            ..Default::default()
+        };
+        let response = mailjet
+            .contacts_list_update(
+                &ContactsListIdentifier::ListAddress(
+                    std::env::var("MJ_CONTACTS_LIST_ID")
+                        .unwrap()
+                        .parse()
+                        .unwrap(),
+                ),
+                &request,
+            )
+            .unwrap();
+
+        assert_eq!(response.count, 1);
+        assert_eq!(response.data[0].name, new_name);
     }
 }

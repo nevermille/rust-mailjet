@@ -15,19 +15,25 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-/// The contact identifier, can be an id or an email address
-pub enum ContactIdentifier {
-    /// Unique numeric ID of the contact you want to retrieve
-    ContactId(i128),
-    /// The email address of the contact your want to retrieve
-    ContactEmail(String),
-}
+use serde::{Deserialize, Serialize};
 
-impl ToString for ContactIdentifier {
-    fn to_string(&self) -> String {
-        match self {
-            ContactIdentifier::ContactId(v) => v.to_string(),
-            ContactIdentifier::ContactEmail(v) => v.to_string(),
-        }
-    }
+/// The contact list creation/update request
+#[doc = include_str!("../../doc/create_a_contact_list.md")]
+#[derive(Serialize, Deserialize, Default)]
+pub struct ContactsListRequest {
+    /// When true, the contact list will be marked as Deleted
+    ///
+    /// Deleted lists can later be reinstated by updating this value to `false`
+    #[serde(rename = "IsDeleted")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_deleted: Option<bool>,
+
+    /// User-specified name for this contact list (must be unique)
+    ///
+    /// Mandatory for creation
+    #[serde(rename = "Name")]
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
