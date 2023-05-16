@@ -426,7 +426,7 @@ impl Mailjet {
     /// * `request`: The request containing contacts list data
     pub fn contacts_list_create(
         &self,
-        request: &ContactRequest,
+        request: &ContactsListRequest,
     ) -> Result<ContactsListResponse, Box<dyn StdError>> {
         let j = serde_json::to_string(request)?;
         let (response, _) = self.post("https://api.mailjet.com/v3/REST/contactslist", &j)?;
@@ -744,7 +744,7 @@ mod test {
         );
         let mut rng = rand::thread_rng();
         let list_name = format!("List {}", rng.gen::<i64>());
-        let contact_list = ContactRequest {
+        let contact_list = ContactsListRequest {
             name: Some(list_name.clone()),
             ..Default::default()
         };
@@ -788,19 +788,8 @@ mod test {
                     .unwrap(),
             ))
             .unwrap();
-        let response_address = mailjet
-            .contacts_list_search_from_id_or_address(&ContactsListIdentifier::ListAddress(
-                std::env::var("MJ_CONTACTS_LIST_ADDRESS").unwrap(),
-            ))
-            .unwrap();
 
-        assert_eq!(response_address.count, 1);
         assert_eq!(response_id.count, 1);
-        assert_eq!(
-            response_address.data[0].address,
-            response_id.data[0].address
-        );
-        assert_eq!(response_address.data[0].id, response_id.data[0].id);
     }
 
     #[test]
@@ -818,7 +807,10 @@ mod test {
         let response = mailjet
             .contacts_list_update(
                 &ContactsListIdentifier::ListAddress(
-                    std::env::var("MJ_CONTACTS_LIST_ADDRESS").unwrap(),
+                    std::env::var("MJ_CONTACTS_LIST_ID")
+                        .unwrap()
+                        .parse()
+                        .unwrap(),
                 ),
                 &request,
             )

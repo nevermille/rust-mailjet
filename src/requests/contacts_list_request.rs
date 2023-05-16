@@ -18,6 +18,7 @@
 use serde::{Deserialize, Serialize};
 
 /// The contact list creation/update request
+#[doc = include_str!("../../doc/create_a_contact_list.md")]
 #[derive(Serialize, Deserialize, Default)]
 pub struct ContactsListRequest {
     /// When true, the contact list will be marked as Deleted
