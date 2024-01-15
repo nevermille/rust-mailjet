@@ -24,6 +24,7 @@ use curl::{
 };
 use std::{error::Error as StdError, io::Read};
 use url_builder::URLBuilder;
+use crate::macros::log::info;
 
 /// The mailjet client
 pub struct Mailjet {
@@ -108,6 +109,8 @@ impl Mailjet {
             header_list.append("Content-Type: application/json")?;
             curl.http_headers(header_list)?;
         }
+
+        info!("Sending a request to Mailjet at {}", url);
 
         {
             // We need this for lifetime reasons
@@ -580,10 +583,10 @@ mod test {
         let response = mailjet.send(&send_request).unwrap().object.unwrap();
 
         assert_eq!(response.messages.len(), 1);
-        assert_eq!(response.messages.get(0).unwrap().status, "success");
-        assert_eq!(response.messages.get(0).unwrap().to.len(), 1);
+        assert_eq!(response.messages.first().unwrap().status, "success");
+        assert_eq!(response.messages.first().unwrap().to.len(), 1);
         assert_eq!(
-            response.messages.get(0).unwrap().to.get(0).unwrap().email,
+            response.messages.first().unwrap().to.first().unwrap().email,
             "john.doe@example.com"
         );
     }

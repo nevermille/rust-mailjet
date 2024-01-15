@@ -30,5 +30,6 @@ pub mod requests;
 pub mod responses;
 /// The traits
 mod traits;
+mod macros;
 
 pub use mailjet::Mailjet;
