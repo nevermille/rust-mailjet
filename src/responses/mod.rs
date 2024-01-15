@@ -21,6 +21,8 @@ use crate::data::{Contact, ContactsList, MessageData, MessageHistoryData, Messag
 pub mod generic_response;
 /// The response to email sending
 mod send_response;
+/// A response from Mailjet
+pub mod response;
 
 /// The response to message history retrieving
 pub type MessageHistoryResponse = generic_response::GenericResponse<MessageHistoryData>;
@@ -34,3 +36,4 @@ pub type ContactResponse = generic_response::GenericResponse<Contact>;
 pub type ContactsListResponse = generic_response::GenericResponse<ContactsList>;
 
 pub use send_response::SendResponse;
+pub use response::Response;
