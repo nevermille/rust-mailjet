@@ -15,21 +15,32 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-// I know it's annoying, but having undocumented code is out of question
-#![warn(missing_docs)]
-#![warn(clippy::missing_docs_in_private_items)]
-#![doc = include_str!("../README.md")]
+#[derive(Default)]
+/// A response from Mailjet
+pub struct Response<T> {
+    /// The HTTP Response code
+    pub http_code: Option<u32>,
 
-/// The data types
-pub mod data;
-/// The mailjet client
-mod mailjet;
-/// The request structures
-pub mod requests;
-/// The response structures
-pub mod responses;
-/// The traits
-mod traits;
-mod macros;
+    /// The data as directly returned by Mailjet
+    pub raw_data: String,
 
-pub use mailjet::Mailjet;
+    /// The parsed data as an object, only if parsing was successful
+    pub object: Option<T>
+}
+
+impl<T> Response<T> {
+    /// Creates a new object
+    ///
+    /// # Parameters
+    ///
+    /// * `http_code`: The HTTP response code if supported
+    /// * `raw_data` : The response body
+    /// * `object` : The parsed object if parsing was successful
+    pub fn create_from_data(http_code: Option<u32>, raw_data: String, object: Option<T>) -> Self {
+        Self {
+            http_code,
+            raw_data,
+            object
+        }
+    }
+}

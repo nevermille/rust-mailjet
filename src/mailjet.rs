@@ -24,6 +24,7 @@ use curl::{
 };
 use std::{error::Error as StdError, io::Read};
 use url_builder::URLBuilder;
+use crate::macros::log::info;
 
 /// The mailjet client
 pub struct Mailjet {
@@ -76,19 +77,16 @@ impl Mailjet {
         url: &str,
         data: Option<String>,
         request_type: RequestType,
-    ) -> Result<(String, u32), Error> {
+    ) -> Result<(String, Result<u32, Error>), Error> {
         let mut curl = Easy::new();
         let mut response: Vec<u8> = Vec::new(); // That's where the response will be written on
 
         // Extract the data if any for lifetime reasons
-        let data_string = match data {
-            Some(v) => v,
-            None => String::new(),
-        };
+        let data_string = data.unwrap_or_default();
 
         // Convert the data in a byte array
         let mut raw_data = match data_string.is_empty() {
-            false => data_string.as_str().as_bytes(),
+            false => data_string.as_bytes(),
             true => &[],
         };
 
@@ -112,6 +110,8 @@ impl Mailjet {
             curl.http_headers(header_list)?;
         }
 
+        info!("Sending a request to Mailjet at {}", url);
+
         {
             // We need this for lifetime reasons
             let mut transfer = curl.transfer();
@@ -133,7 +133,7 @@ impl Mailjet {
 
         Ok((
             String::from_utf8_lossy(&response).to_string(),
-            curl.response_code()?,
+            curl.response_code(),
         ))
     }
 
@@ -142,7 +142,7 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `url`: The URL where to request
-    fn get(&self, url: &str) -> Result<(String, u32), Error> {
+    fn get(&self, url: &str) -> Result<(String, Result<u32, Error>), Error> {
         self.exec(url, None, RequestType::Get)
     }
 
@@ -151,7 +151,7 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `url`: The URL where to request
-    fn delete(&self, url: &str) -> Result<(String, u32), Error> {
+    fn delete(&self, url: &str) -> Result<(String, Result<u32, Error>), Error> {
         self.exec(url, None, RequestType::Delete)
     }
 
@@ -161,7 +161,7 @@ impl Mailjet {
     ///
     /// * `url`: The URL where to request
     /// * `data`: The data to write in the request's body
-    fn post(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
+    fn post(&self, url: &str, data: &str) -> Result<(String, Result<u32, Error>), Error> {
         self.exec(url, Some(data.to_string()), RequestType::Post)
     }
 
@@ -171,7 +171,7 @@ impl Mailjet {
     ///
     /// * `url`: The URL where to request
     /// * `data`: The data to write in the request's body
-    fn put(&self, url: &str, data: &str) -> Result<(String, u32), Error> {
+    fn put(&self, url: &str, data: &str) -> Result<(String, Result<u32, Error>), Error> {
         self.exec(url, Some(data.to_string()), RequestType::Put)
     }
 
@@ -180,10 +180,11 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `request`: The request containing all emails
-    pub fn send(&self, request: &SendRequest) -> Result<SendResponse, Box<dyn StdError>> {
+    pub fn send(&self, request: &SendRequest) -> Result<Response<SendResponse>, Box<dyn StdError>> {
         let j = serde_json::to_string(request)?;
-        let (response, _) = self.post("https://api.mailjet.com/v3.1/send", &j)?;
-        Ok(serde_json::from_str(&response)?)
+        let (response, code) = self.post("https://api.mailjet.com/v3.1/send", &j)?;
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Gets a list of messages with specific information on the type of content, tracking, sending and delivery
@@ -191,7 +192,7 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `search`: The search arguments
-    pub fn message(&self, search: &MessageRequest) -> Result<MessageResponse, Box<dyn StdError>> {
+    pub fn message(&self, search: &MessageRequest) -> Result<Response<MessageResponse>, Box<dyn StdError>> {
         // Create url
         let mut ub = URLBuilder::new();
 
@@ -204,9 +205,10 @@ impl Mailjet {
         search.add_parameters_to_url(&mut ub);
 
         // Execute request
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Retrieves specific information on the type of content, tracking, sending and
@@ -215,7 +217,7 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `message_id`: The message id
-    pub fn message_from_id(&self, message_id: i128) -> Result<MessageResponse, Box<dyn StdError>> {
+    pub fn message_from_id(&self, message_id: i128) -> Result<Response<MessageResponse>, Box<dyn StdError>> {
         // Create url
         let mut ub = URLBuilder::new();
 
@@ -227,9 +229,10 @@ impl Mailjet {
             .add_route(&message_id.to_string());
 
         // Execute request
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Retrieve the event history (sending, open, click etc.) for a specific message
@@ -240,7 +243,7 @@ impl Mailjet {
     pub fn message_history_from_id(
         &self,
         message_id: i128,
-    ) -> Result<MessageHistoryResponse, Box<dyn StdError>> {
+    ) -> Result<Response<MessageHistoryResponse>, Box<dyn StdError>> {
         // Create url
         let mut ub = URLBuilder::new();
 
@@ -252,9 +255,10 @@ impl Mailjet {
             .add_route(&message_id.to_string());
 
         // Execute request
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Retrieve sending / size / spam information about all messages
@@ -265,7 +269,7 @@ impl Mailjet {
     pub fn message_information(
         &self,
         search: &MessageInformationRequest,
-    ) -> Result<MessageInformationResponse, Box<dyn StdError>> {
+    ) -> Result<Response<MessageInformationResponse>, Box<dyn StdError>> {
         // Create url
         let mut ub = URLBuilder::new();
 
@@ -278,9 +282,10 @@ impl Mailjet {
         search.add_parameters_to_url(&mut ub);
 
         // Execute request
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Retrieve sending / size / spam information about a specific message ID
@@ -291,7 +296,7 @@ impl Mailjet {
     pub fn message_information_from_id(
         &self,
         message_id: i128,
-    ) -> Result<MessageInformationResponse, Box<dyn StdError>> {
+    ) -> Result<Response<MessageInformationResponse>, Box<dyn StdError>> {
         // Create url
         let mut ub = URLBuilder::new();
 
@@ -303,9 +308,10 @@ impl Mailjet {
             .add_route(&message_id.to_string());
 
         // Execute request
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Add a new unique contact to your global contact list and select its exclusion status
@@ -316,10 +322,12 @@ impl Mailjet {
     pub fn contact_create(
         &self,
         request: &ContactRequest,
-    ) -> Result<ContactResponse, Box<dyn StdError>> {
+    ) -> Result<Response<
+    ContactResponse>, Box<dyn StdError>> {
         let j = serde_json::to_string(request)?;
-        let (response, _) = self.post("https://api.mailjet.com/v3/REST/contact", &j)?;
-        Ok(serde_json::from_str(&response)?)
+        let (response, code) = self.post("https://api.mailjet.com/v3/REST/contact", &j)?;
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Retrieve a list of all contacts.
@@ -332,7 +340,7 @@ impl Mailjet {
     pub fn contact_search(
         &self,
         search: &ContactSearchRequest,
-    ) -> Result<ContactResponse, Box<dyn StdError>> {
+    ) -> Result<Response<ContactResponse>, Box<dyn StdError>> {
         let mut ub = URLBuilder::new();
 
         ub.set_protocol("https")
@@ -342,9 +350,10 @@ impl Mailjet {
             .add_route("contact");
         search.add_parameters_to_url(&mut ub);
 
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Retrieve a specific contact
@@ -357,7 +366,7 @@ impl Mailjet {
     pub fn contact_search_from_id_or_email(
         &self,
         identifier: &ContactIdentifier,
-    ) -> Result<ContactResponse, Box<dyn StdError>> {
+    ) -> Result<Response<ContactResponse>, Box<dyn StdError>> {
         let mut ub = URLBuilder::new();
 
         ub.set_protocol("https")
@@ -367,9 +376,10 @@ impl Mailjet {
             .add_route("contact")
             .add_route(&identifier.to_string());
 
-        let (response, _) = self.get(&ub.build())?;
+        let (response, code) = self.get(&ub.build())?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Update the user-given name and exclusion status of a specific contact
@@ -382,7 +392,7 @@ impl Mailjet {
         &self,
         identifier: &ContactIdentifier,
         request: &ContactRequest,
-    ) -> Result<ContactResponse, Box<dyn StdError>> {
+    ) -> Result<Response<ContactResponse>, Box<dyn StdError>> {
         let j = serde_json::to_string(&request)?;
         let mut ub = URLBuilder::new();
 
@@ -393,9 +403,10 @@ impl Mailjet {
             .add_route("contact")
             .add_route(&identifier.to_string());
 
-        let (response, _) = self.put(&ub.build(), &j)?;
+        let (response, code) = self.put(&ub.build(), &j)?;
 
-        Ok(serde_json::from_str(&response)?)
+        let object = serde_json::from_str(&response).ok();
+        Ok(Response::create_from_data(code.ok(),response, object))
     }
 
     /// Delete a contact
@@ -405,7 +416,7 @@ impl Mailjet {
     /// # Parameters
     ///
     /// * `contact_id`: The contact's id
-    pub fn contact_delete(&self, contact_id: i128) -> Result<bool, Box<dyn StdError>> {
+    pub fn contact_delete(&self, contact_id: i128) -> Result<Response<bool>, Box<dyn StdError>> {
         let mut ub = URLBuilder::new();
 
         ub.set_protocol("https")
@@ -414,9 +425,9 @@ impl Mailjet {
             .add_route("contacts")
             .add_route(&contact_id.to_string());
 
-        let (_, code) = self.delete(&ub.build())?;
+        let (response, code) = self.delete(&ub.build())?;
 
-        Ok((200..300).contains(&code))
+        Ok(Response::create_from_data(code.clone().ok(), response, Some((200..300).contains(&code.unwrap_or_default()))))
     }
 
     /// Create a new contact list
@@ -532,7 +543,7 @@ impl Mailjet {
 
         let (_, code) = self.delete(&ub.build())?;
 
-        Ok((200..300).contains(&code))
+        Ok((200..300).contains(&code.unwrap_or_default()))
     }
 }
 
@@ -569,13 +580,13 @@ mod test {
         send_request.sandbox_mode = Some(true);
         send_request.messages.push(message);
 
-        let response = mailjet.send(&send_request).unwrap();
+        let response = mailjet.send(&send_request).unwrap().object.unwrap();
 
         assert_eq!(response.messages.len(), 1);
-        assert_eq!(response.messages.get(0).unwrap().status, "success");
-        assert_eq!(response.messages.get(0).unwrap().to.len(), 1);
+        assert_eq!(response.messages.first().unwrap().status, "success");
+        assert_eq!(response.messages.first().unwrap().to.len(), 1);
         assert_eq!(
-            response.messages.get(0).unwrap().to.get(0).unwrap().email,
+            response.messages.first().unwrap().to.first().unwrap().email,
             "john.doe@example.com"
         );
     }
@@ -587,7 +598,7 @@ mod test {
             &std::env::var("MJ_SECRET").unwrap(),
         );
 
-        let response = mailjet.message(&MessageRequest::default()).unwrap();
+        let response = mailjet.message(&MessageRequest::default()).unwrap().object.unwrap();
 
         assert!(response.count > 0);
         assert_eq!(response.count as usize, response.data.len());
@@ -602,7 +613,7 @@ mod test {
 
         let response = mailjet
             .message_from_id(std::env::var("MJ_MESSAGE_ID").unwrap().parse().unwrap())
-            .unwrap();
+            .unwrap().object.unwrap();
 
         assert_eq!(response.count, 1);
         assert_eq!(response.data.len(), 1);
@@ -617,7 +628,7 @@ mod test {
 
         let response = mailjet
             .message_history_from_id(std::env::var("MJ_MESSAGE_ID").unwrap().parse().unwrap())
-            .unwrap();
+            .unwrap().object.unwrap();
 
         assert_eq!(response.count, 1);
         assert_eq!(response.data.len(), 1);
@@ -635,7 +646,7 @@ mod test {
             ..Default::default()
         };
 
-        let response = mailjet.message_information(&search).unwrap();
+        let response = mailjet.message_information(&search).unwrap().object.unwrap();
 
         assert!(response.count > 0);
         assert_eq!(response.count as usize, response.data.len());
@@ -650,7 +661,7 @@ mod test {
 
         let response = mailjet
             .message_information_from_id(std::env::var("MJ_MESSAGE_ID").unwrap().parse().unwrap())
-            .unwrap();
+            .unwrap().object.unwrap();
 
         assert_eq!(response.count, 1);
         assert_eq!(response.data.len(), 1);
@@ -668,7 +679,7 @@ mod test {
             email: Some(email.clone()),
             ..Default::default()
         };
-        let response = mailjet.contact_create(&contact).unwrap();
+        let response = mailjet.contact_create(&contact).unwrap().object.unwrap();
 
         assert_eq!(response.count, 1);
         assert_eq!(response.data[0].email, email);
@@ -676,7 +687,7 @@ mod test {
         // Test delete only if you are in a GDPR country
         if &std::env::var("MJ_CAN_DELETE_CONTACT").unwrap_or_default() == "1" {
             let id = response.data[0].id;
-            assert!(mailjet.contact_delete(id).unwrap());
+            assert!(mailjet.contact_delete(id).unwrap().object.unwrap());
         }
     }
 
@@ -688,7 +699,7 @@ mod test {
         );
         let response = mailjet
             .contact_search(&ContactSearchRequest::default())
-            .unwrap();
+            .unwrap().object.unwrap();
 
         assert!(response.count > 0);
     }
@@ -703,12 +714,12 @@ mod test {
             .contact_search_from_id_or_email(&ContactIdentifier::ContactId(
                 std::env::var("MJ_CONTACT_ID").unwrap().parse().unwrap(),
             ))
-            .unwrap();
+            .unwrap().object.unwrap();
         let contact2 = mailjet
             .contact_search_from_id_or_email(&ContactIdentifier::ContactEmail(
                 std::env::var("MJ_CONTACT_EMAIL").unwrap(),
             ))
-            .unwrap();
+            .unwrap().object.unwrap();
 
         assert_eq!(contact1.count, 1);
         assert_eq!(contact2.count, 1);
@@ -731,7 +742,7 @@ mod test {
                     ..Default::default()
                 },
             )
-            .unwrap();
+            .unwrap().object.unwrap();
 
         assert_eq!(response.count, 1);
     }
