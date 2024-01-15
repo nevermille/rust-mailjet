@@ -95,9 +95,10 @@ use mailjet_api_wrapper::requests::MessageRequest;
 
 let mailjet = Mailjet::from_api_keys("your_api_key", "your_api_secret");
 let res = mailjet.message(&MessageRequest::default()).unwrap_or_default();
+let obj = res.object.unwrap_or_default();
 
-let count = res.count; // Corresponds to Count response field
-let data = res.data; // Corresponds to Data response field
+let count = obj.count; // Corresponds to Count response field
+let data = obj.data; // Corresponds to Data response field
 ```
 
 # The data structures
