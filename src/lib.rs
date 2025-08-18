@@ -28,8 +28,11 @@ mod mailjet;
 pub mod requests;
 /// The response structures
 pub mod responses;
+/// The feedback structures
+pub mod feedback;
 /// The traits
 mod traits;
+/// The macros
 mod macros;
 
 pub use mailjet::Mailjet;
